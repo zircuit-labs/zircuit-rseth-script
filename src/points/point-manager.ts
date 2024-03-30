@@ -5,30 +5,30 @@ import { EVENT_POINT_INCREASE, POINT_SOURCE, POINT_SOURCE_YT } from "../types.js
 
 /**
  *
- * @param amountEzEthHolding amount of Ez Eth user holds during the period
- * @param holdingPeriod amount of time user holds the Ez Eth
+ * @param amountRsEthHolding amount of rsEth user holds during the period
+ * @param holdingPeriod amount of time user holds the rsEth
  * @returns Zircuit point
  *
  * @dev to be reviewed by Zircuit team
  */
 function calcPointsFromHolding(
-  amountEzEthHolding: bigint,
+  amountRsEthHolding: bigint,
   holdingPeriod: bigint
 ): bigint {
-  // * ezETH exchangeRate and * 2 for the 2x multiplier
-  return amountEzEthHolding * MISC_CONSTS.EZETH_POINT_RATE / MISC_CONSTS.ONE_E18 * 2n * holdingPeriod / 3600n;
+  // * rsETH exchangeRate and * 2 for the 2x multiplier
+  return amountRsEthHolding * MISC_CONSTS.RSETH_POINT_RATE / MISC_CONSTS.ONE_E18 * 2n * holdingPeriod / 3600n;
 }
 
 export function updatePoints(
   ctx: EthContext,
   label: POINT_SOURCE,
   account: string,
-  amountEzEthHolding: bigint,
+  amountRsEthHolding: bigint,
   holdingPeriod: bigint,
   updatedAt: number
 ) {
   const zPoint = calcPointsFromHolding(
-    amountEzEthHolding,
+    amountRsEthHolding,
     holdingPeriod
   );
 
@@ -38,7 +38,7 @@ export function updatePoints(
       ctx,
       label,
       account,
-      amountEzEthHolding,
+      amountRsEthHolding,
       holdingPeriod,
       zPoint - zPointTreasuryFee,
       updatedAt
@@ -57,7 +57,7 @@ export function updatePoints(
       ctx,
       label,
       account,
-      amountEzEthHolding,
+      amountRsEthHolding,
       holdingPeriod,
       zPoint,
       updatedAt
@@ -69,7 +69,7 @@ function increasePoint(
   ctx: EthContext,
   label: POINT_SOURCE,
   account: string,
-  amountEzEthHolding: bigint,
+  amountRsEthHolding: bigint,
   holdingPeriod: bigint,
   zPoint: bigint,
   updatedAt: number
@@ -77,7 +77,7 @@ function increasePoint(
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
     account: account.toLowerCase(),
-    amountEzEthHolding: amountEzEthHolding.scaleDown(18),
+    amountRsEthHolding: amountRsEthHolding.scaleDown(18),
     holdingPeriod,
     zPoint: zPoint.scaleDown(18),
     updatedAt,
