@@ -16,7 +16,7 @@ function calcPointsFromHolding(
   holdingPeriod: bigint
 ): bigint {
   // * rsETH exchangeRate and * 2 for the 2x multiplier
-  return amountRsEthHolding * MISC_CONSTS.RSETH_POINT_RATE / MISC_CONSTS.ONE_E18 * 2n * holdingPeriod / 3600n;
+  return amountRsEthHolding * MISC_CONSTS.RSETH_POINT_RATE / MISC_CONSTS.ONE_E18 * holdingPeriod / 3600n;
 }
 
 export function updatePoints(
