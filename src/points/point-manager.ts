@@ -1,3 +1,4 @@
+
 import { LogLevel } from "@sentio/sdk";
 import { EthContext } from "@sentio/sdk/eth";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
@@ -13,8 +14,16 @@ import { EVENT_POINT_INCREASE, POINT_SOURCE, POINT_SOURCE_YT } from "../types.js
  */
 function calcPointsFromHolding(
   amountRsEthHolding: bigint,
-  holdingPeriod: bigint
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
 ): bigint {
+  
+  const cuttoffTimestamp = 1719446400n // 27/06 12:00 AM GMT
+
+  if(holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0)
+  if(holdingEndTimestamp >= cuttoffTimestamp) holdingEndTimestamp = cuttoffTimestamp
+
+  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp
   // * rsETH exchangeRate
   return amountRsEthHolding * MISC_CONSTS.RSETH_POINT_RATE / MISC_CONSTS.ONE_E18 * holdingPeriod / 3600n;
 }
@@ -24,12 +33,14 @@ export function updatePoints(
   label: POINT_SOURCE,
   account: string,
   amountRsEthHolding: bigint,
-  holdingPeriod: bigint,
+  holdingStartTimestamp:bigint,
+  holdingEndTimestamp:bigint,
   updatedAt: number
 ) {
   const zPoint = calcPointsFromHolding(
     amountRsEthHolding,
-    holdingPeriod
+    holdingStartTimestamp,
+    holdingEndTimestamp,
   );
 
   if (label == POINT_SOURCE_YT) {
