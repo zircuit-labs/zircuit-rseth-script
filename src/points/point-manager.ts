@@ -40,7 +40,7 @@ export function updatePoints(
   const zPoint = calcPointsFromHolding(
     amountRsEthHolding,
     holdingStartTimestamp,
-    holdingEndTimestamp,
+    holdingEndTimestamp
   );
 
   if (label == POINT_SOURCE_YT) {
