@@ -1,35 +1,73 @@
 import { LogLevel } from "@sentio/sdk";
 import { EthContext } from "@sentio/sdk/eth";
 import { MISC_CONSTS, PENDLE_POOL_ADDRESSES } from "../consts.js";
-import { EVENT_POINT_INCREASE, POINT_SOURCE, POINT_SOURCE_YT } from "../types.js";
+import { AccountSnapshotYT, AccountSnapshotSY } from "../schema/schema.ts";
 
-/**
- *
- * @param amountRsEthHolding amount of rsEth user holds during the period
- * @param holdingPeriod amount of time user holds the rsEth
- * @returns Zircuit point
- *
- * @dev to be reviewed by Zircuit team
- */
-function calcPointsFromHolding(
-  amountRsEthHolding: bigint,
-  holdingPeriod: bigint
-): bigint {
-  // * rsETH exchangeRate and * 2 for the 2x multiplier
-  return amountRsEthHolding * MISC_CONSTS.RSETH_POINT_RATE / MISC_CONSTS.ONE_E18 * 2n * holdingPeriod / 3600n;
-}
+import {
+  EVENT_POINT_INCREASE,
+  POINT_SOURCE,
+  POINT_SOURCE_YT,
+} from "../types.js";
 
-export function updatePoints(
+export async function updatePointsYT(
   ctx: EthContext,
   label: POINT_SOURCE,
   account: string,
-  amountRsEthHolding: bigint,
-  holdingPeriod: bigint,
-  updatedAt: number
+  amountEzEthHolding: bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
+  updatedAt: bigint,
+  accountSnapshot: AccountSnapshotYT
 ) {
+  await ctx.store.upsert(accountSnapshot);
+  updatePoints(
+    ctx,
+    label,
+    account,
+    amountEzEthHolding,
+    holdingStartTimestamp,
+    holdingEndTimestamp,
+    updatedAt
+  );
+}
+
+export async function updatePointsSY(
+  ctx: EthContext,
+  label: POINT_SOURCE,
+  account: string,
+  amountEzEthHolding: bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
+  updatedAt: bigint,
+  accountSnapshot: AccountSnapshotSY
+) {
+  await ctx.store.upsert(accountSnapshot);
+  updatePoints(
+    ctx,
+    label,
+    account,
+    amountEzEthHolding,
+    holdingStartTimestamp,
+    holdingEndTimestamp,
+    updatedAt
+  );
+}
+
+function updatePoints(
+  ctx: EthContext,
+  label: POINT_SOURCE,
+  account: string,
+  amountEzEthHolding: bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint,
+  updatedAt: bigint,
+) {
+  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
+
   const zPoint = calcPointsFromHolding(
-    amountRsEthHolding,
-    holdingPeriod
+    amountEzEthHolding,
+    holdingStartTimestamp,
+    holdingEndTimestamp
   );
 
   if (label == POINT_SOURCE_YT) {
@@ -38,7 +76,7 @@ export function updatePoints(
       ctx,
       label,
       account,
-      amountRsEthHolding,
+      amountEzEthHolding,
       holdingPeriod,
       zPoint - zPointTreasuryFee,
       updatedAt
@@ -57,7 +95,7 @@ export function updatePoints(
       ctx,
       label,
       account,
-      amountRsEthHolding,
+      amountEzEthHolding,
       holdingPeriod,
       zPoint,
       updatedAt
@@ -65,19 +103,37 @@ export function updatePoints(
   }
 }
 
+function calcPointsFromHolding(
+  amountEzEthHolding: bigint,
+  holdingStartTimestamp: bigint,
+  holdingEndTimestamp: bigint
+): bigint {
+  const cuttoffTimestamp = MISC_CONSTS.CUTOFF_TIME;
+  if (holdingStartTimestamp >= cuttoffTimestamp) return BigInt(0);
+  if (holdingEndTimestamp >= cuttoffTimestamp)
+    holdingEndTimestamp = cuttoffTimestamp;
+
+  const holdingPeriod = holdingEndTimestamp - holdingStartTimestamp;
+
+  return amountEzEthHolding * 
+    MISC_CONSTS.RSETH_POINT_RATE * 
+    holdingPeriod * MISC_CONSTS.PENDLE_DEFAULT_MULTIPLIER /
+    (MISC_CONSTS.ONE_E18 * 3600n);
+}
+
 function increasePoint(
   ctx: EthContext,
   label: POINT_SOURCE,
   account: string,
-  amountRsEthHolding: bigint,
+  amountEzEthHolding: bigint,
   holdingPeriod: bigint,
   zPoint: bigint,
-  updatedAt: number
+  updatedAt: bigint
 ) {
   ctx.eventLogger.emit(EVENT_POINT_INCREASE, {
     label,
-    account: account.toLowerCase(),
-    amountRsEthHolding: amountRsEthHolding.scaleDown(18),
+    account,
+    amountEzEthHolding: amountEzEthHolding.scaleDown(18),
     holdingPeriod,
     zPoint: zPoint.scaleDown(18),
     updatedAt,
