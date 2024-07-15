@@ -103,13 +103,13 @@ export function updatePoints(
   updatedAt: number
 ) {
   if (label == POINT_SOURCE_SY) {
-    if (holdingEndTimestamp <= V1_END_TIMESTAMP) {
+    if (holdingEndTimestamp < V1_END_TIMESTAMP) {
       return;
     }
 
     holdingStartTimestamp =
-      holdingStartTimestamp < V1_END_TIMESTAMP + 1n
-        ? V1_END_TIMESTAMP + 1n
+      holdingStartTimestamp < V1_END_TIMESTAMP
+        ? V1_END_TIMESTAMP
         : holdingStartTimestamp;
   }
   const zPoint = calcPointsFromHolding(
